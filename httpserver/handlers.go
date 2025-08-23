@@ -188,7 +188,8 @@ func (h *HTTPHandlers) HandleGetLast(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.database.GetLast(count)
+	last_trans, _ := h.database.GetLast(count)
+	fmt.Println(last_trans)
 
 }
 
