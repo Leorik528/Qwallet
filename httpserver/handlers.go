@@ -175,7 +175,7 @@ failed:
 func (h *HTTPHandlers) HandleGetLast(w http.ResponseWriter, r *http.Request) {
 
 	count, err := strconv.Atoi(r.URL.Query()["count"][0])
-	fmt.Println(count)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 
@@ -188,8 +188,29 @@ func (h *HTTPHandlers) HandleGetLast(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	last_trans, _ := h.database.GetLast(count)
-	fmt.Println(last_trans)
+	txList := &qwalletstore.TrasactionList{
+		Transactions: make(map[string]qwalletstore.Transaction),
+	}
+
+	err = h.database.GetLastTransactions(txList, count)
+
+	//fmt.Println(txList.Transactions)
+	if err != nil {
+		log.Printf("Error getting transactions: %v", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": "Internal server error",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(txList.Transactions); err != nil {
+		log.Printf("Error encoding response: %v", err)
+	}
 
 }
 

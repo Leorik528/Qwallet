@@ -189,35 +189,47 @@ func (s *PostgresStore) count_txt() int {
 	return count
 }
 
-func (s *PostgresStore) GetLast(tx_cnt int) (*qwalletstore.TrasactionList, error) {
-
-	if tx_cnt > s.count_txt() {
-		fmt.Println("в базе нет столько переводов")
+func (s *PostgresStore) GetLastTransactions(txList *qwalletstore.TrasactionList, limit int) error {
+	if txList == nil {
+		return fmt.Errorf("")
 	}
-	fmt.Println(1)
+
+	if limit <= 0 {
+		return fmt.Errorf("кол-во транзакций не может быть отрицательным %d", limit)
+	}
+
+	if limit > 1000 {
+		limit = 1000
+	}
+
+	if limit > s.count_txt() {
+		return fmt.Errorf("В базе нет столько записей")
+	}
+
 	rows, err := s.db.Query(
 		`SELECT id, from_address, to_address, amount, created_at
-        FROM transactions 
-        ORDER BY created_at 
-        LIMIT $1`, tx_cnt,
+         FROM transactions 
+         ORDER BY created_at DESC 
+         LIMIT $1`,
+		limit,
 	)
-
-	defer rows.Close()
 	if err != nil {
-		fmt.Errorf("failed to select transaction: %w", err)
+		return fmt.Errorf("failed to query transactions: %w", err)
 	}
+	defer rows.Close()
 
-	last_tx := qwalletstore.TrasactionList{}
+	// Блокировка для конкурентного доступа
+
+	// Очищаем или инициализируем мапу
+
 	for rows.Next() {
-
-		tx := qwalletstore.Transaction{}
+		var tx qwalletstore.Transaction
 		err := rows.Scan(&tx.ID, &tx.FromAddress, &tx.ToAddress, &tx.Amount, &tx.CreatedAt)
-
 		if err != nil {
-			return nil, fmt.Errorf("Ошибка в чтении базы %w", err)
-
+			return fmt.Errorf("Ошибка при считывании базы: %w", err)
 		}
-		last_tx.Transactions[string(tx.ID)] = tx
+		txList.Transactions[fmt.Sprintf("%d", tx.ID)] = tx
 	}
-	return &last_tx, nil
+
+	return nil
 }
