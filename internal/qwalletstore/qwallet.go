@@ -17,6 +17,11 @@ type QwalletList struct {
 	mtx      sync.RWMutex
 }
 
+type TrasactionList struct {
+	Transactions map[string]Transaction
+	mtx          sync.RWMutex
+}
+
 // Transaction - для внутренней бизнес-логики и БД
 type Transaction struct {
 	ID          int64 // Для
