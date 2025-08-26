@@ -1,6 +1,8 @@
 # Используемые технологии:
 golang
+
 postgres
+
 docker / docker-compose
 
 # Библиотеки:
